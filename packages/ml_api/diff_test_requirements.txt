@@ -8,4 +8,4 @@ flask==1.0.2
 marshmallow==3.19.0
 
 # Set this to the previous model version
-vve-regression-model==0.0.5
+vve-regression-model==0.0.4

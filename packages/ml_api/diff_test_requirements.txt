@@ -1,0 +1,11 @@
+--extra-index-url=${PIP_EXTRA_INDEX_URL}
+
+# api
+flask==1.0.2
+
+
+# schema validation
+marshmallow==3.19.0
+
+# Set this to the previous model version
+vve-regression-model==0.0.3

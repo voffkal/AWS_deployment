@@ -185,6 +185,19 @@ jobs:
             AWS_REGION="${AWS_REGION:-$AWS_DEFAULT_REGION}"
             [ -n "$AWS_REGION" ] || { echo "neither AWS_REGION nor AWS_DEFAULT_REGION is set"; exit 1; }
             export AWS_REGION
+            # Create the registry if it is not there. The repo is disposable -
+            # it gets deleted between demos so it does not sit above the ECR
+            # free tier - and the pipeline should not depend on someone having
+            # created it by hand.
+            if ! aws ecr describe-repositories --repository-names vve-ml-api >/dev/null 2>&1; then
+              echo "Creating ECR repository vve-ml-api"
+              aws ecr create-repository --repository-name vve-ml-api \
+                --image-scanning-configuration scanOnPush=true >/dev/null
+              # Untagged layers pile up fast: every push retags :latest and
+              # orphans the previous image. Six builds left 2.9 GB behind once.
+              aws ecr put-lifecycle-policy --repository-name vve-ml-api \
+                --lifecycle-policy-text '{"rules":[{"rulePriority":1,"description":"keep only the 3 most recent images","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":3},"action":{"type":"expire"}}]}' >/dev/null
+            fi
             aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
             make build-ml-api-aws tag-ml-api push-ml-api-aws
             # The ECS cluster is created for a demo and torn down afterwards -

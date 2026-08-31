@@ -53,5 +53,12 @@ aws ecs delete-service --cluster vve-ml-api-cluster \
 aws ecs delete-cluster --cluster vve-ml-api-cluster
 ```
 
-The ECR repository and the image are kept: 500 MB of private storage is inside
-the free tier, and the image is what a redeploy would start from.
+The ECR repository was deleted afterwards as well. Six CI builds had left
+2.9 GB in it - each push retags `:latest` and orphans the previous image, and
+ECR keeps those untagged layers forever - which is well past the 500 MB free
+tier.
+
+The deploy job now creates the repository itself when it is missing and
+attaches a lifecycle policy that keeps only the three most recent images, so
+the pipeline stays runnable without anything being provisioned by hand and
+without the storage creeping back up.

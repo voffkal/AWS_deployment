@@ -9,3 +9,7 @@ marshmallow==3.19.0
 # vve-regression-model==0.0.4 is installed from a GitHub Release asset
 # (see the 'Fetch model package' step in .circleci/config.yml), not from
 # a package index - pip cannot pin a release asset by version here.
+
+# capture_model_predictions.py builds the baseline with pandas; the model
+# package brings its own copy, but this script runs before it is installed.
+pandas==2.0.2

@@ -129,21 +129,34 @@ jobs:
       - checkout
       - *install_gh
       - *prepare_venv
+      - *fetch_data
+      # Baseline: the model that is currently released. Its predictions are
+      # captured BEFORE the candidate is trained, so the comparison is
+      # released-model vs candidate rather than a model against itself.
       - run:
-          name: Capturing previous model predictions
+          name: Capturing predictions from the released model
           command: |
             . venv/bin/activate
             pip install -r packages/ml_api/diff_test_requirements.txt
+            TAG=$(gh release list --json tagName -q '[.[].tagName | select(startswith("model-v"))][0]')
+            [ -n "$TAG" ] || { echo "no model-v* release published yet"; exit 1; }
+            echo "Baseline model release: $TAG"
+            gh release download "$TAG" -D baseline_pkg -p '*.whl' --clobber
+            pip install baseline_pkg/*.whl
             PYTHONPATH=./packages/ml_api python3 packages/ml_api/tests/capture_model_predictions.py
+      # Candidate: train from this commit, replacing the released package.
+      - run:
+          name: Training the candidate model
+          command: |
+            . venv/bin/activate
+            pip install -r packages/regression_model/requirements.txt
+            PYTHONPATH=./packages/regression_model python3 packages/regression_model/regression_model/train_pipeline.py
+            pip install ./packages/regression_model
       - run:
           name: Running differential tests
           command: |
             . venv/bin/activate
             pip install -r packages/ml_api/requirements.txt
-            TAG=$(gh release list --json tagName -q '[.[].tagName | select(startswith("model-v"))][0]')
-            [ -n "$TAG" ] || { echo "no model-v* release published yet"; exit 1; }
-            gh release download "$TAG" -D model_pkg -p '*.whl' --clobber
-            pip install model_pkg/*.whl
             py.test -vv packages/ml_api/tests -m differential
 
 

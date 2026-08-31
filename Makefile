@@ -12,8 +12,11 @@ fetch-model:
 	  echo "Using model release $$TAG"; \
 	  gh release download "$$TAG" -D model_pkg -p '*.whl' --clobber
 
+# Fargate runs X86_64. Building on an ARM Mac without pinning the platform
+# produces an arm64 image that dies there with `exec format error`, so pin it
+# rather than depend on whatever the build host happens to be.
 build-ml-api-aws: fetch-model
-	docker build -t $(NAME):$(COMMIT_ID) .
+	docker build --platform linux/amd64 -t $(NAME):$(COMMIT_ID) .
 
 tag-ml-api:
 	@test -n "$(AWS_ACCOUNT_ID)" || (echo "AWS_ACCOUNT_ID is not set" && exit 1)

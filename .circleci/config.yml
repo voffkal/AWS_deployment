@@ -187,7 +187,21 @@ jobs:
             export AWS_REGION
             aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
             make build-ml-api-aws tag-ml-api push-ml-api-aws
-            aws ecs update-service --cluster vve-ml-api-cluster --service vve-ml-api-task-service --task-definition vve-ml-api-task --force-new-deployment
+            # The ECS cluster is created for a demo and torn down afterwards -
+            # Fargate is not in the free tier and bills per second. Pushing the
+            # image is the part that must always work; rolling out is skipped
+            # when there is nothing to roll out to.
+            if aws ecs describe-clusters --clusters vve-ml-api-cluster \
+                 --query 'clusters[0].status' --output text 2>/dev/null | grep -q ACTIVE; then
+              aws ecs update-service \
+                --cluster vve-ml-api-cluster \
+                --service vve-ml-api-task-service \
+                --task-definition vve-ml-api-task \
+                --force-new-deployment
+            else
+              echo "Cluster vve-ml-api-cluster is not active - image pushed, rollout skipped."
+              echo "See docs/deployment-run.md for a recorded end-to-end run."
+            fi
 
 
 workflows:

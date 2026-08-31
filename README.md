@@ -50,6 +50,11 @@ push ──> test model ──> test API ──> differential tests
 Each stage gates the next: a model that fails its own tests is never packaged,
 and an image is only built from a commit whose model was published.
 
+This pipeline has actually been run end to end on AWS — the image was built,
+pushed to ECR, deployed on Fargate, and served real predictions before being
+torn down. See [docs/deployment-run.md](docs/deployment-run.md) for the live
+responses and the teardown commands.
+
 ## Layout
 
 ```
@@ -105,6 +110,9 @@ The `Makefile` targets fail fast if a required variable is missing rather than
 building a broken image.
 
 ## Running it
+
+Build for the right architecture: Fargate runs X86_64, so an image built on an
+ARM Mac without `--platform linux/amd64` dies with `exec format error`.
 
 ```bash
 # locally

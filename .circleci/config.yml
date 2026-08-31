@@ -13,6 +13,21 @@ prepare_venv: &prepare_venv
       source venv/bin/activate
       pip install --upgrade pip
 
+install_gh: &install_gh
+  run:
+    name: Install GitHub CLI
+    command: |
+      # cimg/python does not ship gh, and every job that touches a model
+      # release needs it.
+      curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+        | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+      sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+        | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+      sudo apt-get update -qq
+      sudo apt-get install -y gh
+      gh --version
+
 fetch_model_package: &fetch_model_package
   run:
     name: Install model package from its GitHub Release
@@ -60,6 +75,7 @@ jobs:
     <<: *defaults
     steps:
       - checkout
+      - *install_gh
       - restore_cache:
           keys:
             - py-deps-{{ checksum "packages/ml_api/requirements.txt" }}
@@ -86,6 +102,7 @@ jobs:
     <<: *defaults
     steps:
       - checkout
+      - *install_gh
       - *prepare_venv
       - run:
           name: Install requirements
@@ -110,6 +127,7 @@ jobs:
     <<: *defaults
     steps:
       - checkout
+      - *install_gh
       - *prepare_venv
       - run:
           name: Capturing previous model predictions

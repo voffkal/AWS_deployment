@@ -13,6 +13,17 @@ prepare_venv: &prepare_venv
       source venv/bin/activate
       pip install --upgrade pip
 
+fetch_model_package: &fetch_model_package
+  run:
+    name: Install model package from its GitHub Release
+    command: |
+      . venv/bin/activate
+      TAG=$(gh release list --json tagName -q '[.[].tagName | select(startswith("model-v"))][0]')
+      [ -n "$TAG" ] || { echo "no model-v* release published yet"; exit 1; }
+      echo "Using model release $TAG"
+      gh release download "$TAG" -D model_pkg -p '*.whl' --clobber
+      pip install model_pkg/*.whl
+
 fetch_data: &fetch_data
   run:
     name: Set script permissions and fetch data
@@ -60,6 +71,10 @@ jobs:
             . venv/bin/activate
             pip install --upgrade pip
             pip install -r packages/ml_api/requirements.txt
+            TAG=$(gh release list --json tagName -q '[.[].tagName | select(startswith("model-v"))][0]')
+            [ -n "$TAG" ] || { echo "no model-v* release published yet"; exit 1; }
+            gh release download "$TAG" -D model_pkg -p '*.whl' --clobber
+            pip install model_pkg/*.whl
             py.test -vv packages/ml_api/tests -m "not differential"
       - save_cache:
           key: py-deps-{{ checksum "packages/ml_api/requirements.txt" }}
@@ -84,9 +99,10 @@ jobs:
             . venv/bin/activate
             PYTHONPATH=./packages/regression_model python3 packages/regression_model/regression_model/train_pipeline.py
       - run:
-          name: Publish model to Gemfury
+          name: Publish model package as a GitHub Release
           command: |
             . venv/bin/activate
+            pip install build
             chmod +x ./scripts/publish_model.sh
             ./scripts/publish_model.sh ./packages/regression_model/
 
@@ -106,6 +122,10 @@ jobs:
           command: |
             . venv/bin/activate
             pip install -r packages/ml_api/requirements.txt
+            TAG=$(gh release list --json tagName -q '[.[].tagName | select(startswith("model-v"))][0]')
+            [ -n "$TAG" ] || { echo "no model-v* release published yet"; exit 1; }
+            gh release download "$TAG" -D model_pkg -p '*.whl' --clobber
+            pip install model_pkg/*.whl
             py.test -vv packages/ml_api/tests -m differential
 
 

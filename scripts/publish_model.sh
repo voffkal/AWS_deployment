@@ -1,44 +1,60 @@
 #!/bin/bash
+#
+# Build the model package and publish the wheel as a GitHub Release asset.
+#
+# The course used a private Gemfury index for this. GitHub Releases does the
+# same job for free: the wheel is a versioned, downloadable artifact, and the
+# API installs it as an ordinary pinned dependency. What is published is the
+# package built from THIS commit, so the release tag, the package version and
+# the trained model inside it all line up.
+#
+# Requires: gh (authenticated via GH_TOKEN), python with build installed.
+# Usage:    ./scripts/publish_model.sh ./packages/regression_model/
 
-# Building packages and uploading them to a Gemfury repository
-
-GEMFURY_URL=$GEMFURY_PUSH_URL
-
-set -e
+set -euo pipefail
 
 DIRS="$@"
 BASE_DIR=$(pwd)
-SETUP="setup.py"
 
-warn() {
-    echo "$@" 1>&2
+warn() { echo "$@" 1>&2; }
+die()  { warn "$@"; exit 1; }
+
+command -v gh >/dev/null || die "gh CLI is required"
+[ -n "${GH_TOKEN:-}" ] || warn "GH_TOKEN is not set - gh must be authenticated another way"
+
+publish() {
+    local dir="${1/%\//}"
+    cd "$BASE_DIR/$dir"
+    [ -e setup.py ] || { warn "No setup.py in $dir, skipping"; return; }
+
+    local version tag
+    version=$(python setup.py --version)
+    tag="model-v${version}"
+
+    echo "Building $(python setup.py --name) ${version}"
+    rm -rf dist
+    python -m build --wheel --outdir dist . || die "Building the wheel failed"
+
+    # The wheel must carry the trained pipeline; without it the package
+    # imports but blows up on the first prediction.
+    python - "$version" <<'PY' || die "the wheel has no trained model in it - run train_pipeline.py first"
+import glob, sys, zipfile
+whl = glob.glob("dist/*.whl")[0]
+names = zipfile.ZipFile(whl).namelist()
+sys.exit(0 if any(n.endswith(".pkl") for n in names) else 1)
+PY
+
+    cd "$BASE_DIR"
+    if gh release view "$tag" >/dev/null 2>&1; then
+        echo "Release $tag exists - uploading over it"
+        gh release upload "$tag" "$dir"/dist/*.whl --clobber
+    else
+        gh release create "$tag" "$dir"/dist/*.whl \
+            --title "$tag" \
+            --notes "Model package ${version}, built from ${GITHUB_SHA:-$(git rev-parse HEAD)}."
+    fi
+    echo "Published $tag"
 }
 
-die() {
-    warn "$@"
-    exit 1
-}
-
-build() {
-    DIR="${1/%\//}"
-    echo "Checking directory $DIR"
-    cd "$BASE_DIR/$DIR"
-    [ ! -e $SETUP ] && warn "No $SETUP file, skipping" && return
-    PACKAGE_NAME=$(python $SETUP --fullname)
-    echo "Package $PACKAGE_NAME"
-    python "$SETUP" sdist bdist_wheel || die "Building package $PACKAGE_NAME failed"
-    for X in $(ls dist)
-    do
-        curl -F package=@"dist/$X" "$GEMFURY_URL" || die "Uploading package $PACKAGE_NAME failed on file dist/$X"
-    done
-}
-
-if [ -n "$DIRS" ]; then
-    for dir in $DIRS; do
-        build $dir
-    done
-else
-    ls -d */ | while read dir; do
-        build $dir
-    done
-fi
+[ -n "$DIRS" ] || die "usage: $0 <package-dir> [...]"
+for d in $DIRS; do publish "$d"; done

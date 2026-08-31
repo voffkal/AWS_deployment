@@ -7,3 +7,6 @@ packages/regression_model
 *.log
 .git
 .gitignore
+
+# model_pkg holds the wheel fetched from the GitHub Release - the build needs it
+!model_pkg

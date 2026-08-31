@@ -1,0 +1,170 @@
+# Byte-compiled  optimized  DLL files
+__pycache__
+.py[cod]
+$py.class
+
+# C extensions
+.so
+
+# Distribution  packaging
+.Python
+build
+develop-eggs
+dist
+downloads
+eggs
+.eggs
+lib
+lib64
+parts
+sdist
+var
+wheels
+.egg-info
+.installed.cfg
+.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject dateother infos into it.
+.manifest
+.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test  coverage reports
+htmlcov
+.tox
+.coverage
+.coverage.
+.cache
+nosetests.xml
+coverage.xml
+.cover
+.hypothesis
+.pytest_cache
+
+# Translations
+.mo
+.pot
+
+# Django stuff
+.log
+local_settings.py
+db.sqlite3
+
+# Flask stuff
+instance
+.webassets-cache
+
+# Scrapy stuff
+.scrapy
+
+# Sphinx documentation
+docs_build
+
+# PyBuilder
+target
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# celery beat schedule file
+celerybeat-schedule
+
+# SageMath parsed files
+.sage.py
+
+# Environments
+.env
+.venv
+env
+env39
+env311
+venv
+ENV
+env.bak
+venv.bak
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+site
+
+# mypy
+.mypy_cache
+
+# pycharm
+.idea/
+
+# datafiles
+packages/regression_model/regression_model/datasets/*.csv
+packages/regression_model/regression_model/datasets/*.zip
+packages/regression_model/regression_model/datasets/*.txt
+train.csv
+test.csv
+test_data_predictions.csv
+
+
+# all logs
+logs/
+
+# trained models (will be created in CI)
+packages/regression_model/regression_model/trained_models/*.pkl
+*.pkl
+
+.DS_Store
+
+kaggle.json
+packages/ml_api/uploads/*
+# --- secrets: never commit credentials ---
+*.pem
+*.key
+kaggle.json
+*accessKeys*.csv
+.env
+.env.*
+!.env.example
+credentials
+*_pass
+*secret*
+!*secrets*.md
+
+# --- local envs / build junk ---
+.tox/
+.venv/
+venv/
+test_package/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+__pycache__/
+
+# --- macOS / IDE ---
+.DS_Store
+.idea/
+.vscode/
+
+# --- runtime artifacts ---
+logs/
+uploads/
+*.log
+
+# --- exceptions: these ARE part of the deliverable ---
+# The trained pipeline ships with the package; the API cannot start without it.
+!**/trained_models/*.pkl
+# Raw Kaggle data stays out, but the Titanic sample the tests rely on is kept.
+!**/classification_model/datasets/raw.csv

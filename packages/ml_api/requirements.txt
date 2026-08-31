@@ -1,0 +1,14 @@
+--extra-index-url=${PIP_EXTRA_INDEX_URL}
+
+# api
+flask==2.3.2
+werkzeug==2.3.3
+
+# schema validation
+marshmallow==3.19.0
+
+# Install from gemfury
+vve-regression-model==0.0.4
+
+# Deployment
+gunicorn==20.1.0

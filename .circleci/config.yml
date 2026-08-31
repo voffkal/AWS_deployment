@@ -129,6 +129,13 @@ jobs:
       - checkout
       - *install_gh
       - *prepare_venv
+      # The kaggle CLI ships with the model package requirements, so those
+      # have to be installed before the dataset can be fetched.
+      - run:
+          name: Install model requirements (brings the kaggle CLI)
+          command: |
+            . venv/bin/activate
+            pip install -r packages/regression_model/requirements.txt
       - *fetch_data
       # Baseline: the model that is currently released. Its predictions are
       # captured BEFORE the candidate is trained, so the comparison is
@@ -149,7 +156,6 @@ jobs:
           name: Training the candidate model
           command: |
             . venv/bin/activate
-            pip install -r packages/regression_model/requirements.txt
             PYTHONPATH=./packages/regression_model python3 packages/regression_model/regression_model/train_pipeline.py
             pip install ./packages/regression_model
       - run:

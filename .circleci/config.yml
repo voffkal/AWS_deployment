@@ -191,15 +191,18 @@ jobs:
             # Fargate is not in the free tier and bills per second. Pushing the
             # image is the part that must always work; rolling out is skipped
             # when there is nothing to roll out to.
-            if aws ecs describe-clusters --clusters vve-ml-api-cluster \
-                 --query 'clusters[0].status' --output text 2>/dev/null | grep -q ACTIVE; then
+            # Exact match, not grep: a deleted cluster reports INACTIVE, and
+            # `grep ACTIVE` happily matches the tail of that word.
+            CLUSTER_STATUS=$(aws ecs describe-clusters --clusters vve-ml-api-cluster \
+              --query 'clusters[0].status' --output text 2>/dev/null || echo MISSING)
+            if [ "$CLUSTER_STATUS" = "ACTIVE" ]; then
               aws ecs update-service \
                 --cluster vve-ml-api-cluster \
                 --service vve-ml-api-task-service \
                 --task-definition vve-ml-api-task \
                 --force-new-deployment
             else
-              echo "Cluster vve-ml-api-cluster is not active - image pushed, rollout skipped."
+              echo "Cluster vve-ml-api-cluster is $CLUSTER_STATUS - image pushed, rollout skipped."
               echo "See docs/deployment-run.md for a recorded end-to-end run."
             fi
 

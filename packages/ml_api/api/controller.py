@@ -36,24 +36,11 @@ def predict():
 
     input_data, errors = validate_inputs(input_data=json_data)
 
-    # TODO(you): decide how the API answers when validation reports errors.
-    #
-    # Context: validate_inputs returns (rows_that_passed, errors). When some
-    # rows fail, _filter_error_rows has already DROPPED them, so `input_data`
-    # is shorter than what the client sent. The old code ignored `errors`
-    # entirely and returned 200 with a short predictions array, so the client
-    # could not tell which of its rows a prediction belonged to.
-    #
-    # Implement the behaviour you want here (roughly 5-8 lines). Options:
-    #   a) strict  - any error => 400, predict nothing. Simple contract,
-    #                client must send clean data.
-    #   b) partial - predict on surviving rows, return 200 with both
-    #                predictions and errors. Flexible, but the client needs
-    #                row indices to realign results.
-    #   c) all-bad - 400 only when every row failed, otherwise 200 + errors.
-    #
-    # Whatever you pick, make sure the client can always map a prediction
-    # back to the row it came from.
+    # Invalid rows are a client problem: refuse the batch instead of
+    # answering 200 with fewer predictions than rows submitted.
+    if errors is not None:
+        _logger.warning(f'Input validation failed: {errors}')
+        return jsonify({'errors': errors}), 400
 
     result = make_prediction(input_data=input_data)
     _logger.debug(f'Outputs: {result}')
